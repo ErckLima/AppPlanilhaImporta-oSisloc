@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplicativo de Preenchimento - Planilha SISLOC</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f4f6f8;
+    color: #333;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.header {
+    background: #f57c00;
+    color: white;
+    padding: 40px;
+    text-align: center;
+}
+
+.header h1 {
+    font-size: 2.5rem;
+    font-weight: 500;
+    margin-bottom: 10px;
+}
+
+.header p {
+    font-size: 1.1rem;
+    opacity: 0.95;
+    margin-bottom: 20px;
+}
+
+.header-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.btn-header {
+    background: #f57c00;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-header:hover {
+    background: #e65100;
+}
+
+.btn-header.secondary {
+    background: #0056A4;
+}
+
+.btn-header.secondary:hover {
+    background: #0277BD;
+}
+
+.content {
+    padding: 40px;
+}
+
+.form-section,
+.data-table-section,
+.validator-section {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 30px;
+    margin-bottom: 30px;
+}
+
+.form-section h2,
+.data-table-section h2,
+.validator-section h2 {
+    color: #0056A4;
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #f57c00;
+    padding-bottom: 10px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.form-group label.required::after {
+    content: " *";
+    color: #D50000;
+    font-weight: bold;
+}
+
+.form-group input,
+.form-group select {
+    padding: 10px 14px;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: #fff;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #f57c00;
+    box-shadow: 0 0 0 3px rgba(245, 124, 0, 0.2);
+}
+
+.form-group input.error {
+    border-color: #D50000;
+    background-color: #fff0f0;
+}
+
+.form-group .help-text {
+    font-size: 0.8rem;
+    color: #777;
+    margin-top: 5px;
+}
+
+.error-message {
+    color: #D50000;
+    font-size: 0.8rem;
+    margin-top: 5px;
+    display: none;
+}
+
+.form-actions,
+.export-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-top: 30px;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: #f57c00;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #e65100;
+}
+
+.btn-secondary {
+    background: #D50000;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #b71c1c;
+}
+
+.btn-info {
+    background: #0056A4;
+    color: white;
+}
+
+.btn-info:hover {
+    background: #0277BD;
+}
+
+.btn-danger {
+    background: #D50000;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #b71c1c;
+}
+
+.btn:disabled {
+    background: #bdbdbd;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.table-container {
+    overflow-x: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    font-size: 0.95rem;
+}
+
+.data-table th {
+    background: #0056A4;
+    color: white;
+    padding: 12px;
+    text-align: left;
+}
+
+.data-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.data-table tr:nth-child(even) {
+    background: #f9f9f9;
+}
+
+.data-table tr:hover {
+    background: #f1f1f1;
+}
+
+.alert {
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.alert-success {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.alert-error {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+}
+
+.alert-info {
+    background: #e3f2fd;
+    color: #01579b;
+    border: 1px solid #81d4fa;
+}
+
+.loading {
+    display: none;
+    text-align: center;
+    padding: 20px;
+    color: #0056A4;
+    font-weight: bold;
+}
+
+.loading::after {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #0056A4;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+    margin-left: 10px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.file-upload {
+    border: 2px dashed #0056A4;
+    border-radius: 10px;
+    padding: 40px;
+    background: #fafafa;
+    transition: all 0.3s ease;
+}
+
+.file-upload:hover {
+    background: #f1f1f1;
+    border-color: #0277BD;
+}
+
+.file-upload input[type="file"] {
+    display: none;
+}
+
+.file-upload label {
+    cursor: pointer;
+    color: #0056A4;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.file-upload label:hover {
+    color: #0277BD;
+}
+
+.validation-result {
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.validation-success {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.validation-error {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+}
+
+.calculated-field {
+    background-color: #f5f5f5 !important;
+    color: #666;
+}
+
+@media (max-width: 768px) {
+    .header h1 {
+        font-size: 2rem;
+    }
+
+    .content {
+        padding: 20px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-actions,
+    .export-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .btn {
+        width: 100%;
+        max-width: 300px;
+    }
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Aplicativo de Preenchimento</h1>
+            <p>Sistema SISLOC - Planilha de Importação</p>
+            <div class="header-buttons">
+                <button class="btn-header" onclick="showFormPage()">
+                    📝 Preencher Nova Planilha
+                </button>
+            </div>
+        </div>
+
+        <!-- Página do Formulário -->
+        <div id="formPage" class="content">
+            <div id="alerts"></div>
+            <div id="loading" class="loading">Processando...</div>
+
+            <form id="importForm">
+                <!-- Dados Básicos do Item -->
+                <div class="form-section">
+                    <h2>📋 Dados Básicos do Item</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="codigo" class="required">Código do Produto</label>
+                            <input type="text" id="codigo" name="codigo" required>
+                            <div class="help-text">Código referencial do produto no SISLOC</div>
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="cfop" class="required">CFOP</label>
+                            <input type="text" id="cfop" name="cfop" placeholder="Ex: 3.551" required>
+                            <div class="help-text">Formato: X.XXX (ex: 3.551)</div>
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="quantidade" class="required">Quantidade</label>
+                            <input type="number" id="quantidade" name="quantidade" step="any" min="0" required>
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="valorUnitario" class="required">Valor Unitário</label>
+                            <input type="number" id="valorUnitario" name="valorUnitario" step="any" min="0" required>
+                            <div class="error-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Valores Adicionais -->
+                <div class="form-section">
+                    <h2>💰 Valores Adicionais</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="seguro">Seguro</label>
+                            <input type="number" id="seguro" name="seguro" step="any" min="0" value="0">
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="frete">Frete</label>
+                            <input type="number" id="frete" name="frete" step="any" min="0" value="0">
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="desconto">Desconto</label>
+                            <input type="number" id="desconto" name="desconto" step="any" min="0" value="0">
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="outrasDespesas">Outras Despesas</label>
+                            <input type="number" id="outrasDespesas" name="outrasDespesas" step="any" min="0" value="0">
+                            <div class="error-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dados da Declaração -->
+                <div class="form-section">
+                    <h2>📄 Dados da Declaração</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="numeroDI" class="required">Número DI/DSI/DA</label>
+                            <input type="text" id="numeroDI" name="numeroDI" required>
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="dataRegistro" class="required">Data de Registro</label>
+                            <input type="date" id="dataRegistro" name="dataRegistro" required>
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="codigoExportador">Código do Exportador</label>
+                            <input type="text" id="codigoExportador" name="codigoExportador">
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="viaTransporte" class="required">Via de Transporte</label>
+                            <select id="viaTransporte" name="viaTransporte" required>
+                                <option value="">Selecione...</option>
+                                <option value="1">1 - Marítima</option>
+                                <option value="2">2 - Fluvial</option>
+                                <option value="3">3 - Lacustre</option>
+                                <option value="4">4 - Aérea</option>
+                                <option value="5">5 - Postal</option>
+                                <option value="6">6 - Ferroviária</option>
+                                <option value="7">7 - Rodoviária</option>
+                                <option value="8">8 - Conduto/Rede Fixa</option>
+                                <option value="9">9 - Meios Próprios</option>
+                            </select>
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="valorAFRMM">Valor AFRMM</label>
+                            <input type="number" id="valorAFRMM" name="valorAFRMM" step="any" min="0" value="0">
+                            <div class="error-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dados do Desembaraço -->
+                <div class="form-section">
+                    <h2>🏛️ Dados do Desembaraço</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="desembaracoUF" class="required">Desembaraço (UF)</label>
+                            <select id="desembaracoUF" name="desembaracoUF" required>
+                                <option value="">Selecione...</option>
+                                <option value="AC">AC</option>
+                                <option value="AL">AL</option>
+                                <option value="AP">AP</option>
+                                <option value="AM">AM</option>
+                                <option value="BA">BA</option>
+                                <option value="CE">CE</option>
+                                <option value="DF">DF</option>
+                                <option value="ES">ES</option>
+                                <option value="GO">GO</option>
+                                <option value="MA">MA</option>
+                                <option value="MT">MT</option>
+                                <option value="MS">MS</option>
+                                <option value="MG">MG</option>
+                                <option value="PA">PA</option>
+                                <option value="PB">PB</option>
+                                <option value="PR">PR</option>
+                                <option value="PE">PE</option>
+                                <option value="PI">PI</option>
+                                <option value="RJ">RJ</option>
+                                <option value="RN">RN</option>
+                                <option value="RS">RS</option>
+                                <option value="RO">RO</option>
+                                <option value="RR">RR</option>
+                                <option value="SC">SC</option>
+                                <option value="SP">SP</option>
+                                <option value="SE">SE</option>
+                                <option value="TO">TO</option>
+                            </select>
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="desembaracoLocal" class="required">Desembaraço (Local)</label>
+                            <input type="text" id="desembaracoLocal" name="desembaracoLocal" required>
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="desembaracoData" class="required">Desembaraço (Data)</label>
+                            <input type="date" id="desembaracoData" name="desembaracoData" required>
+                            <div class="error-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dados Adicionais -->
+                <div class="form-section">
+                    <h2>📝 Dados Adicionais</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="adicao" class="required">Adição</label>
+                            <input type="number" id="adicao" name="adicao" min="1" required>
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="itemAdicao" class="required">Item Adição</label>
+                            <input type="number" id="itemAdicao" name="itemAdicao" min="1" required>
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="codigoFabricante" class="required">Código Fabricante</label>
+                            <input type="text" id="codigoFabricante" name="codigoFabricante" required>
+                            <div class="error-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Impostos -->
+                <div class="form-section">
+                    <h2>💼 Impostos</h2>
+                    
+                    <!-- Imposto de Importação (II) -->
+                    <h3>Imposto de Importação (II)</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="percentualII">% II</label>
+                            <input type="number" id="percentualII" name="percentualII" step="any" min="0" value="0">
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="baseII">Base II</label>
+                            <input type="number" id="baseII" name="baseII" step="any" min="0" value="0">
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="despesasAduaneiras">Despesas Aduaneiras</label>
+                            <input type="number" id="despesasAduaneiras" name="despesasAduaneiras" step="any" min="0" value="0">
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="valorIOF">Valor IOF</label>
+                            <input type="number" id="valorIOF" name="valorIOF" step="any" min="0" value="0">
+                            <div class="error-message"></div>
+                        </div>
+                    </div>
+
+                    <!-- IPI -->
+                    <h3>IPI</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="cstIPI" class="required">CST IPI</label>
+                            <input type="number" id="cstIPI" name="cstIPI" min="0" max="99" required>
+                            <div class="help-text">Deve conter 2 dígitos (ex: 00)</div>
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="percentualIPI">% IPI</label>
+                            <input type="number" id="percentualIPI" name="percentualIPI" step="any" min="0" value="0">
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="baseIPI">Base IPI</label>
+                            <input type="number" id="baseIPI" name="baseIPI" step="any" min="0" value="0">
+                            <div class="error-message"></div>
+                        </div>
+                    </div>
+
+                    <!-- PIS -->
+                    <h3>PIS</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="cstPIS" class="required">CST PIS</label>
+                            <input type="number" id="cstPIS" name="cstPIS" min="0" max="99" required>
+                            <div class="help-text">Deve conter 2 dígitos (ex: 98)</div>
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="percentualPIS">% PIS</label>
+                            <input type="number" id="percentualPIS" name="percentualPIS" step="any" min="0" value="0">
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="basePIS">Base PIS</label>
+                            <input type="number" id="basePIS" name="basePIS" step="any" min="0" value="0">
+                            <div class="error-message"></div>
+                        </div>
+                    </div>
+
+                    <!-- COFINS -->
+                    <h3>COFINS</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="cstCOFINS" class="required">CST COFINS</label>
+                            <input type="number" id="cstCOFINS" name="cstCOFINS" min="0" max="99" required>
+                            <div class="help-text">Deve conter 2 dígitos (ex: 98)</div>
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="percentualCOFINS">% COFINS</label>
+                            <input type="number" id="percentualCOFINS" name="percentualCOFINS" step="any" min="0" value="0">
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="baseCOFINS">Base COFINS</label>
+                            <input type="number" id="baseCOFINS" name="baseCOFINS" step="any" min="0" value="0">
+                            <div class="error-message"></div>
+                        </div>
+                    </div>
+
+                    <!-- ICMS -->
+                    <h3>ICMS</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="cstICMS" class="required">CST ICMS</label>
+                            <input type="number" id="cstICMS" name="cstICMS" min="0" max="999" required>
+                            <div class="help-text">Deve conter 3 dígitos (ex: 100)</div>
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="percentualICMS">% ICMS</label>
+                            <input type="number" id="percentualICMS" name="percentualICMS" step="any" min="0" value="0">
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="baseICMS">Base ICMS</label>
+                            <input type="number" id="baseICMS" name="baseICMS" step="any" min="0" value="0">
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="percentualRedICMS">% Red ICMS</label>
+                            <input type="number" id="percentualRedICMS" name="percentualRedICMS" step="any" min="0" value="0">
+                            <div class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="valorICMSST">Valor ICMS ST</label>
+                            <input type="number" id="valorICMSST" name="valorICMSST" step="any" min="0" value="0">
+                            <div class="error-message"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Totais Calculados -->
+                <div class="form-section">
+                    <h2>🧮 Totais Calculados</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="valorTotalCalculado">Valor Total</label>
+                            <input type="number" id="valorTotalCalculado" name="valorTotalCalculado" step="any" readonly class="calculated-field">
+                            <div class="help-text">Quantidade × Valor Unitário</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="baseIICalculada">Base II Calculada</label>
+                            <input type="number" id="baseIICalculada" name="baseIICalculada" step="any" readonly class="calculated-field">
+                            <div class="help-text">Valor Total × %II / 100</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="valorIICalculado">Valor II</label>
+                            <input type="number" id="valorIICalculado" name="valorIICalculado" step="any" readonly class="calculated-field">
+                            <div class="help-text">Base II × %II / 100</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="valorIPICalculado">Valor IPI</label>
+                            <input type="number" id="valorIPICalculado" name="valorIPICalculado" step="any" readonly class="calculated-field">
+                            <div class="help-text">Base IPI × %IPI / 100</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="valorPISCalculado">Valor PIS</label>
+                            <input type="number" id="valorPISCalculado" name="valorPISCalculado" step="any" readonly class="calculated-field">
+                            <div class="help-text">Base PIS × %PIS / 100</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="valorCOFINSCalculado">Valor COFINS</label>
+                            <input type="number" id="valorCOFINSCalculado" name="valorCOFINSCalculado" step="any" readonly class="calculated-field">
+                            <div class="help-text">Base COFINS × %COFINS / 100</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="valorICMSCalculado">Valor ICMS</label>
+                            <input type="number" id="valorICMSCalculado" name="valorICMSCalculado" step="any" readonly class="calculated-field">
+                            <div class="help-text">Base ICMS × %ICMS / 100</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">➕ Adicionar Item</button>
+                    <button type="button" class="btn btn-secondary" onclick="clearForm()">🗑️ Limpar Formulário</button>
+                </div>
+            </form>
+
+            <!-- Tabela de Itens Adicionados -->
+            <div class="data-table-section">
+                <h2>📊 Itens Adicionados</h2>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Código</th>
+                                <th>CFOP</th>
+                                <th>Qtd</th>
+                                <th>Valor Unit.</th>
+                                <th>Valor Total</th>
+                                <th>Seguro</th>
+                                <th>Frete</th>
+                                <th>Desconto</th>
+                                <th>Outras Desp.</th>
+                                <th>Número DI</th>
+                                <th>Data Reg.</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                            <tr>
+                                <td colspan="13" style="text-align: center; color: #6c757d; padding: 40px;">
+                                    Nenhum item adicionado ainda
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="export-actions">
+                    <input type="file" id="importFileInput" accept=".xlsx,.xls" style="display: none;" onchange="handleImportFileSelect(event)">
+                    <button class="btn btn-info" onclick="document.getElementById('importFileInput').click()">📤 Importar Planilha</button>
+                    <button id="exportBtn" class="btn btn-info" onclick="exportToExcel()" disabled>📥 Exportar para Excel</button>
+                    <button class="btn btn-danger" onclick="clearAllData()">🗑️ Limpar Todos os Dados</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Variáveis globais
+            const form = document.getElementById("importForm");
+            const exportBtn = document.getElementById("exportBtn");
+            let itens = JSON.parse(localStorage.getItem("itensPlanilha")) || [];
+            let editandoIndex = -1; // Índice do item sendo editado (-1 = não editando)
+
+            // Função para calcular valores automaticamente
+            function calcularValores() {
+                const quantidade = parseFloat(document.getElementById("quantidade").value) || 0;
+                const valorUnitario = parseFloat(document.getElementById("valorUnitario").value) || 0;
+                const percentualII = parseFloat(document.getElementById("percentualII").value) || 0;
+                const baseII = parseFloat(document.getElementById("baseII").value) || 0;
+                const percentualIPI = parseFloat(document.getElementById("percentualIPI").value) || 0;
+                const baseIPI = parseFloat(document.getElementById("baseIPI").value) || 0;
+                const percentualPIS = parseFloat(document.getElementById("percentualPIS").value) || 0;
+                const basePIS = parseFloat(document.getElementById("basePIS").value) || 0;
+                const percentualCOFINS = parseFloat(document.getElementById("percentualCOFINS").value) || 0;
+                const baseCOFINS = parseFloat(document.getElementById("baseCOFINS").value) || 0;
+                const percentualICMS = parseFloat(document.getElementById("percentualICMS").value) || 0;
+                const baseICMS = parseFloat(document.getElementById("baseICMS").value) || 0;
+
+                // Valor Total
+                const valorTotal = quantidade * valorUnitario;
+                document.getElementById("valorTotalCalculado").value = valorTotal.toFixed(2);
+
+                // Base II Calculada (se não foi preenchida manualmente)
+                if (baseII === 0) {
+                    const baseIICalculada = valorTotal * percentualII / 100;
+                    document.getElementById("baseIICalculada").value = baseIICalculada.toFixed(2);
+                }
+
+                // Valor II
+                const valorII = baseII * percentualII / 100;
+                document.getElementById("valorIICalculado").value = valorII.toFixed(2);
+
+                // Valor IPI
+                const valorIPI = baseIPI * percentualIPI / 100;
+                document.getElementById("valorIPICalculado").value = valorIPI.toFixed(2);
+
+                // Valor PIS
+                const valorPIS = basePIS * percentualPIS / 100;
+                document.getElementById("valorPISCalculado").value = valorPIS.toFixed(2);
+
+                // Valor COFINS
+                const valorCOFINS = baseCOFINS * percentualCOFINS / 100;
+                document.getElementById("valorCOFINSCalculado").value = valorCOFINS.toFixed(2);
+
+                // Valor ICMS
+                const valorICMS = baseICMS * percentualICMS / 100;
+                document.getElementById("valorICMSCalculado").value = valorICMS.toFixed(2);
+            }
+
+            // Adicionar event listeners para cálculo automático
+            document.getElementById("quantidade").addEventListener("input", calcularValores);
+            document.getElementById("valorUnitario").addEventListener("input", calcularValores);
+            document.getElementById("percentualII").addEventListener("input", calcularValores);
+            document.getElementById("baseII").addEventListener("input", calcularValores);
+            document.getElementById("percentualIPI").addEventListener("input", calcularValores);
+            document.getElementById("baseIPI").addEventListener("input", calcularValores);
+            document.getElementById("percentualPIS").addEventListener("input", calcularValores);
+            document.getElementById("basePIS").addEventListener("input", calcularValores);
+            document.getElementById("percentualCOFINS").addEventListener("input", calcularValores);
+            document.getElementById("baseCOFINS").addEventListener("input", calcularValores);
+            document.getElementById("percentualICMS").addEventListener("input", calcularValores);
+            document.getElementById("baseICMS").addEventListener("input", calcularValores);
+
+            // Submissão do formulário
+            form.addEventListener("submit", (e) => {
+                e.preventDefault();
+
+                const formData = new FormData(form);
+                const item = {};
+                formData.forEach((value, key) => {
+                    item[key] = value;
+                });
+
+                // Adicionar valores calculados
+                item.valorTotalCalculado = document.getElementById("valorTotalCalculado").value;
+                item.valorIICalculado = document.getElementById("valorIICalculado").value;
+                item.valorIPICalculado = document.getElementById("valorIPICalculado").value;
+                item.valorPISCalculado = document.getElementById("valorPISCalculado").value;
+                item.valorCOFINSCalculado = document.getElementById("valorCOFINSCalculado").value;
+                item.valorICMSCalculado = document.getElementById("valorICMSCalculado").value;
+
+                if (editandoIndex >= 0) {
+                    // Modo edição: atualizar item existente
+                    itens[editandoIndex] = item;
+                    showAlert("Item atualizado com sucesso!", "success");
+                    cancelarEdicao();
+                } else {
+                    // Modo adição: adicionar novo item
+                    itens.push(item);
+                    showAlert("Item adicionado com sucesso!", "success");
+                }
+
+                localStorage.setItem("itensPlanilha", JSON.stringify(itens));
+                updateTable();
+                clearForm();
+                exportBtn.disabled = false;
+            });
+
+            function updateTable() {
+                const tbody = document.getElementById("dataTableBody");
+                tbody.innerHTML = "";
+
+                if (itens.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan='13' style='text-align:center; color: #6c757d; padding: 40px;'>Nenhum item adicionado ainda</td></tr>`;
+                    exportBtn.disabled = true;
+                    return;
+                }
+
+                itens.forEach((item, index) => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${item.codigo || ''}</td>
+                        <td>${item.cfop || ''}</td>
+                        <td>${item.quantidade || ''}</td>
+                        <td>${item.valorUnitario || ''}</td>
+                        <td>${item.valorTotalCalculado || ''}</td>
+                        <td>${item.seguro || ''}</td>
+                        <td>${item.frete || ''}</td>
+                        <td>${item.desconto || ''}</td>
+                        <td>${item.outrasDespesas || ''}</td>
+                        <td>${item.numeroDI || ''}</td>
+                        <td>${item.dataRegistro || ''}</td>
+                        <td>
+                            <button class="btn btn-info" onclick="editarItem(${index})" style="padding: 5px 10px; font-size: 0.8rem; margin-right: 5px;">✏️</button>
+                            <button class="btn btn-danger" onclick="removerItem(${index})" style="padding: 5px 10px; font-size: 0.8rem;">🗑️</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                exportBtn.disabled = false;
+            }
+
+            function editarItem(index) {
+                const item = itens[index];
+                editandoIndex = index;
+
+                // Carregar dados no formulário
+                document.getElementById("codigo").value = item.codigo || '';
+                document.getElementById("cfop").value = item.cfop || '';
+                document.getElementById("quantidade").value = item.quantidade || '';
+                document.getElementById("valorUnitario").value = item.valorUnitario || '';
+                document.getElementById("seguro").value = item.seguro || '';
+                document.getElementById("frete").value = item.frete || '';
+                document.getElementById("desconto").value = item.desconto || '';
+                document.getElementById("outrasDespesas").value = item.outrasDespesas || '';
+                document.getElementById("numeroDI").value = item.numeroDI || '';
+                document.getElementById("dataRegistro").value = item.dataRegistro || '';
+                document.getElementById("codigoExportador").value = item.codigoExportador || '';
+                document.getElementById("viaTransporte").value = item.viaTransporte || '';
+                document.getElementById("valorAFRMM").value = item.valorAFRMM || '';
+                document.getElementById("desembaracoUF").value = item.desembaracoUF || '';
+                document.getElementById("desembaracoLocal").value = item.desembaracoLocal || '';
+                document.getElementById("desembaracoData").value = item.desembaracoData || '';
+                document.getElementById("adicao").value = item.adicao || '';
+                document.getElementById("itemAdicao").value = item.itemAdicao || '';
+                document.getElementById("codigoFabricante").value = item.codigoFabricante || '';
+                document.getElementById("percentualII").value = item.percentualII || '';
+                document.getElementById("baseII").value = item.baseII || '';
+                document.getElementById("despesasAduaneiras").value = item.despesasAduaneiras || '';
+                document.getElementById("valorIOF").value = item.valorIOF || '';
+                document.getElementById("cstIPI").value = item.cstIPI || '';
+                document.getElementById("percentualIPI").value = item.percentualIPI || '';
+                document.getElementById("baseIPI").value = item.baseIPI || '';
+                document.getElementById("cstPIS").value = item.cstPIS || '';
+                document.getElementById("percentualPIS").value = item.percentualPIS || '';
+                document.getElementById("basePIS").value = item.basePIS || '';
+                document.getElementById("cstCOFINS").value = item.cstCOFINS || '';
+                document.getElementById("percentualCOFINS").value = item.percentualCOFINS || '';
+                document.getElementById("baseCOFINS").value = item.baseCOFINS || '';
+                document.getElementById("cstICMS").value = item.cstICMS || '';
+                document.getElementById("percentualICMS").value = item.percentualICMS || '';
+                document.getElementById("percentualRedICMS").value = item.percentualRedICMS || '';
+                document.getElementById("baseICMS").value = item.baseICMS || '';
+                document.getElementById("valorICMSST").value = item.valorICMSST || '';
+
+                // Recalcular valores
+                calcularValores();
+
+                // Alterar interface para modo edição
+                const submitBtn = form.querySelector('button[type="submit"]');
+                submitBtn.innerHTML = '✏️ Atualizar Item';
+                submitBtn.className = 'btn btn-info';
+
+                // Adicionar botão cancelar se não existir
+                let cancelBtn = document.getElementById('cancelarEdicaoBtn');
+                if (!cancelBtn) {
+                    cancelBtn = document.createElement('button');
+                    cancelBtn.type = 'button';
+                    cancelBtn.id = 'cancelarEdicaoBtn';
+                    cancelBtn.className = 'btn btn-secondary';
+                    cancelBtn.innerHTML = '❌ Cancelar Edição';
+                    cancelBtn.onclick = cancelarEdicao;
+                    submitBtn.parentNode.insertBefore(cancelBtn, submitBtn.nextSibling);
+                }
+
+                // Rolar para o topo do formulário
+                document.getElementById('formPage').scrollIntoView({ behavior: 'smooth' });
+
+                showAlert(`Editando item ${index + 1}. Faça as alterações e clique em "Atualizar Item".`, "info");
+            }
+
+            function cancelarEdicao() {
+                editandoIndex = -1;
+                
+                // Restaurar interface normal
+                const submitBtn = form.querySelector('button[type="submit"]');
+                submitBtn.innerHTML = '➕ Adicionar Item';
+                submitBtn.className = 'btn btn-primary';
+
+                // Remover botão cancelar
+                const cancelBtn = document.getElementById('cancelarEdicaoBtn');
+                if (cancelBtn) {
+                    cancelBtn.remove();
+                }
+
+                // Limpar formulário
+                clearForm();
+                
+                showAlert("Edição cancelada.", "info");
+            }
+
+            function removerItem(index) {
+                if (confirm("Tem certeza que deseja remover este item?")) {
+                    itens.splice(index, 1);
+                    localStorage.setItem("itensPlanilha", JSON.stringify(itens));
+                    updateTable();
+                    showAlert("Item removido com sucesso!", "success");
+                }
+            }
+
+            function clearForm() {
+                // Se estiver editando, cancelar edição primeiro
+                if (editandoIndex >= 0) {
+                    cancelarEdicao();
+                    return;
+                }
+                
+                form.reset();
+                // Limpar campos calculados
+                document.getElementById("valorTotalCalculado").value = "";
+                document.getElementById("baseIICalculada").value = "";
+                document.getElementById("valorIICalculado").value = "";
+                document.getElementById("valorIPICalculado").value = "";
+                document.getElementById("valorPISCalculado").value = "";
+                document.getElementById("valorCOFINSCalculado").value = "";
+                document.getElementById("valorICMSCalculado").value = "";
+            }
+
+            function clearAllData() {
+                if (confirm("Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.")) {
+                    // Cancelar edição se estiver editando
+                    if (editandoIndex >= 0) {
+                        cancelarEdicao();
+                    }
+                    
+                    localStorage.removeItem("itensPlanilha");
+                    itens = [];
+                    updateTable();
+                    showAlert("Todos os dados foram removidos!", "success");
+                }
+            }
+
+            function exportToExcel() {
+                if (itens.length === 0) {
+                    showAlert("Nenhum item para exportar!", "error");
+                    return;
+                }
+
+                document.getElementById("loading").style.display = "block";
+
+                fetch("/exportar", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(itens)
+                })
+                .then(res => {
+                    if (!res.ok) throw new Error("Erro ao exportar planilha");
+                    return res.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `planilha_sisloc_${new Date().toISOString().slice(0,10)}.xlsx`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    showAlert("Planilha exportada com sucesso!", "success");
+                })
+                .catch(err => {
+                    console.error(err);
+                    showAlert("Erro ao exportar planilha: " + err.message, "error");
+                })
+                .finally(() => {
+                    document.getElementById("loading").style.display = "none";
+                });
+            }
+
+            function showAlert(message, type) {
+                const alertsContainer = document.getElementById("alerts");
+                const alert = document.createElement("div");
+                alert.className = `alert alert-${type}`;
+                alert.textContent = message;
+                
+                alertsContainer.appendChild(alert);
+                
+                setTimeout(() => {
+                    alert.remove();
+                }, 5000);
+            }
+
+            function showFormPage() {
+                // Função para mostrar a página do formulário (já está visível)
+            }
+
+            // Função para lidar com a seleção de arquivo para importação
+            function handleImportFileSelect(event) {
+                const arquivo = event.target.files[0];
+                if (!arquivo) {
+                    return;
+                }
+
+                // Cancelar edição se estiver editando
+                if (editandoIndex >= 0) {
+                    cancelarEdicao();
+                }
+
+                // Verificar se é um arquivo Excel
+                if (!arquivo.name.toLowerCase().endsWith('.xlsx') && !arquivo.name.toLowerCase().endsWith('.xls')) {
+                    showAlert("Por favor, selecione um arquivo Excel (.xlsx ou .xls)", "error");
+                    return;
+                }
+
+                // Mostrar loading
+                document.getElementById("loading").style.display = "block";
+
+                // Criar FormData para enviar o arquivo
+                const formData = new FormData();
+                formData.append('arquivo', arquivo);
+
+                // Enviar para o servidor
+                fetch('/importar', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Erro HTTP: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.sucesso && data.dados) {
+                        // Limpar dados existentes
+                        itens = [];
+                        
+                        // Adicionar dados importados
+                        data.dados.forEach(item => {
+                            // Calcular valores que podem estar faltando
+                            const quantidade = parseFloat(item.quantidade) || 0;
+                            const valorUnitario = parseFloat(item.valorUnitario) || 0;
+                            const valorTotal = quantidade * valorUnitario;
+                            
+                            // Adicionar valores calculados se não existirem
+                            item.valorTotalCalculado = valorTotal.toFixed(2);
+                            
+                            // Calcular impostos se as bases e percentuais existirem
+                            if (item.baseII && item.percentualII) {
+                                item.valorIICalculado = (parseFloat(item.baseII) * parseFloat(item.percentualII) / 100).toFixed(2);
+                            }
+                            if (item.baseIPI && item.percentualIPI) {
+                                item.valorIPICalculado = (parseFloat(item.baseIPI) * parseFloat(item.percentualIPI) / 100).toFixed(2);
+                            }
+                            if (item.basePIS && item.percentualPIS) {
+                                item.valorPISCalculado = (parseFloat(item.basePIS) * parseFloat(item.percentualPIS) / 100).toFixed(2);
+                            }
+                            if (item.baseCOFINS && item.percentualCOFINS) {
+                                item.valorCOFINSCalculado = (parseFloat(item.baseCOFINS) * parseFloat(item.percentualCOFINS) / 100).toFixed(2);
+                            }
+                            if (item.baseICMS && item.percentualICMS) {
+                                item.valorICMSCalculado = (parseFloat(item.baseICMS) * parseFloat(item.percentualICMS) / 100).toFixed(2);
+                            }
+                            
+                            itens.push(item);
+                        });
+                        
+                        // Salvar no localStorage
+                        localStorage.setItem("itensPlanilha", JSON.stringify(itens));
+                        
+                        // Atualizar a tabela
+                        updateTable();
+                        
+                        // Mostrar mensagem de sucesso
+                        showAlert(`Planilha importada com sucesso! ${data.dados.length} item(ns) carregado(s).`, "success");
+                        
+                        // Limpar o input de arquivo
+                        event.target.value = '';
+                    } else {
+                        throw new Error(data.erro || 'Erro desconhecido ao importar planilha');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao importar:', error);
+                    showAlert(`Erro ao importar planilha: ${error.message}`, "error");
+                    
+                    // Limpar o input de arquivo
+                    event.target.value = '';
+                })
+                .finally(() => {
+                    // Esconder loading
+                    document.getElementById("loading").style.display = "none";
+                });
+            }
+
+            // Inicializar a tabela ao carregar a página
+            updateTable();
+            
+            // Calcular valores iniciais
+            calcularValores();
+        </script>
+    </div>
+</body>
+</html>
+
