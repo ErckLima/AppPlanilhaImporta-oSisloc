@@ -423,7 +423,7 @@ body {
                         </div>
                         <div class="form-group">
                             <label for="cfop" class="required">CFOP</label>
-                            <input type="text" id="cfop" name="cfop" placeholder="Ex: 3.551" required>
+                            <input type="text" id="cfop" name="cfop" placeholder="Ex: 3.551" pattern="^\d\.\d{3}$" required>
                             <div class="help-text">Formato: X.XXX (ex: 3.551)</div>
                             <div class="error-message"></div>
                         </div>
@@ -482,8 +482,8 @@ body {
                             <div class="error-message"></div>
                         </div>
                         <div class="form-group">
-                            <label for="codigoExportador">Código do Exportador</label>
-                            <input type="text" id="codigoExportador" name="codigoExportador">
+                            <label for="codigoExportador" class="required">Código do Exportador</label>
+                            <input type="text" id="codigoExportador" name="codigoExportador" required>
                             <div class="error-message"></div>
                         </div>
                         <div class="form-group">
@@ -617,8 +617,8 @@ body {
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="cstIPI" class="required">CST IPI</label>
-                            <input type="number" id="cstIPI" name="cstIPI" min="0" max="99" required>
-                            <div class="help-text">Deve conter 2 dígitos (ex: 00)</div>
+                            <input type="text" id="cstIPI" name="cstIPI" pattern="^\d{2}$" maxlength="2" required>
+                            <div class="help-text">Deve conter exatamente 2 dígitos (ex: 00, 49, 99)</div>
                             <div class="error-message"></div>
                         </div>
                         <div class="form-group">

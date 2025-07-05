@@ -65,7 +65,7 @@ def importar():
                 'baseII': float(ws.cell(row=linha, column=23).value) if ws.cell(row=linha, column=23).value else 0,
                 'despesasAduaneiras': float(ws.cell(row=linha, column=25).value) if ws.cell(row=linha, column=25).value else 0,
                 'valorIOF': float(ws.cell(row=linha, column=26).value) if ws.cell(row=linha, column=26).value else 0,
-                'cstIPI': int(ws.cell(row=linha, column=27).value) if ws.cell(row=linha, column=27).value else 0,
+                'cstIPI': str(ws.cell(row=linha, column=27).value) if ws.cell(row=linha, column=27).value else 00,
                 'percentualIPI': float(ws.cell(row=linha, column=28).value) if ws.cell(row=linha, column=28).value else 0,
                 'baseIPI': float(ws.cell(row=linha, column=29).value) if ws.cell(row=linha, column=29).value else 0,
                 'cstPIS': int(ws.cell(row=linha, column=31).value) if ws.cell(row=linha, column=31).value else 0,
