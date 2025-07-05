@@ -1,0 +1,126 @@
+Tenho um protótipo de um aplicativo que preciso de finalizar. 
+
+Já existem alguns campos mas vou te passar orientações para inserir mais campos e como eles devem reagir. 
+
+Linha 1: Contém apenas a descrição de cada coluna (cabeçalho), com todos os dados a seguir:
+
+Linha 2: Contém os totais da planilha (preenchida automaticamente ou calculada), somente em alguns campos sendo eles:
+	Célula F2:  =SOMA(F3:F16)
+    Célula G2:  =SOMA(G3:G16)
+    Célula H2:  =SOMA(H3:H16)
+    Célula I2:  =SOMA(I3:I16)
+    Célula J2:  =SOMA(J3:J16)
+    Célula O2:  =SOMA(O3:O16)
+    Célula W2:  =SOMA(W3:W16)
+    Célula X2:  =SOMA(X3:X16)
+    Célula Y2:  =SOMA(Y3:Y16)
+    Célula Z2:  =SOMA(Z3:Z16)
+    Célula AC2: =SOMA(AC3:AC16)
+    Célula AD2: =SOMA(AD3:AD16)
+    Célula AG2: =SOMA(AG3:AG16)
+    Célula AH2: =SOMA(AH3:AH16)
+    Célula AK2: =SOMA(AK3:AK16)
+    Célula AL2: =SOMA(AL3:AL16)
+    Célula AP2: =SOMA(AP3:AP16)
+    Célula AQ2: =SOMA(AQ3:AQ16)
+    Célula AR2: =SOMA(AR3:AR16)
+
+
+A partir da Linha 3: Os dados dos itens da nota devem ser preenchidos, de acordo com o dicionario:
+	
+
+dados_produto = {
+    "item": , #Numeração sequencial dos itens, começando em 1 (1, 2, 3, ...). Formato: Numérico inteiro
+    "codigo": , #Código referencial do produto, conforme cadastrado no SISLOC. Formato: Numérico/Alfanumérico
+    "CFOP": ,#Código Fiscal de Operações e Prestações. Deve conter 4 dígitos e incluir o ponto. Formato: Numérico com ponto
+    "quantidade": ,#Quantidade do produto importado. Formato: Numérico
+    "valor unitário": ,#Valor unitário do produto. Formato: Numérico (decimal)
+    "valor total": ,#Formula (=D"NUMERO DA LINHA"*E"NUMERO DA LINHA")
+    "seguro": ,#Valor do seguro proporcional ao item. Formato: Numérico (decimal)
+    "frete": ,#Valor do frete proporcional ao item. Formato: Numérico (decimal)
+    "desconto": ,#Valor do desconto proporcional ao item. Formato: Numérico (decimal)
+    "outras despesas": ,#Outras despesas proporcionais ao item. Formato: Numérico (decimal)
+    "Número DI/DSI/DA": ,#Número da Declaração de Importação (DI), Declaração Simplificada de Importação (DSI) ou Declaração de Admissão (DA). Formato: Alfanumérico
+    "Data registro": ,#Data de registro da DI/DSI/DA. Formato: Data (DD/MM/AAAA)
+    "Código do Exportador": ,#Código do exportador. Formato: Numérico/Alfanumérico
+    "Via de transporte": ,#Via de transporte da mercadoria. Códigos: 1-Marítima, 2-Fluvial, 3-Lacustre, 4-Aérea, 5-Postal, 6-Ferroviária, 7-Rodoviária, 8-Conduto/Rede Fixa, 9-Meios Próprios. Formato: Numérico
+    "Valor AFRMM": ,#Valor do Adicional ao Frete para Renovação da Marinha Mercante. Formato: Numérico (decimal)
+    "Desembaraço (UF)": ,#Unidade da Federação onde ocorreu o desembaraço aduaneiro. Exemplo: MG, SP, RJ. Formato: Texto (sigla UF)
+    "Desembaraço (Local)": ,#Local (cidade) onde ocorreu o desembaraço aduaneiro. Formato: Texto
+    "Desembaraço (Data)": ,#Data do desembaraço aduaneiro. Formato: Data (DD/MM/AAAA)
+    "adição": ,#Número da adição da DI. Formato: Numérico inteiro
+    "item adição": ,#Número do item da adição. Formato: Numérico inteiro
+    "Código Fabricante": ,#Código do fabricante do produto. Formato: Numérico/Alfanumérico
+    "%II": ,#Alíquota do Imposto de Importação (II). Formato: Numérico (percentual)
+    "Base II": ,#Formula (=ARRED(V"NUMERO DA LINHA"*W"NUMERO DA LINHA"%;2))
+    "Valor II": ,#Valor do Imposto de Importação (II). Formato: Numérico (decimal)
+    "Despesas aduaneiras": ,#Valor das despesas aduaneiras. Formato: Numérico (decimal)
+    "Valor IOF": ,#Valor do Imposto sobre Operações Financeiras (IOF). Formato: Numérico (decimal)
+    "CST IPI": ,#Código de Situação Tributária do IPI. Deve conter 2 digitos. Exemplo: 00. Formato: Numérico inteiro
+    "%IPI": ,#Alíquota do IPI. Formato: Numérico (percentual)
+    "Base IPI": ,#Base de cálculo do IPI. Formato: Numérico (decimal)
+    "Valor IPI": ,#Formula (=ARRED(AC"NUMERO DA LINHA"*AB"NUMERO DA LINHA"%;2))
+    "CST PIS": ,#Código de Situação Tributária do PIS. Deve conter 2 digitos. Exemplo: 98. Formato: Numérico inteiro
+    "%PIS": ,#Alíquota do PIS. Formato: Numérico (percentual)
+    "Base PIS": ,#Base de cálculo do PIS. Formato: Numérico (decimal)
+    "Valor PIS": ,#Formula (=ARRED(AG"NUMERO DA LINHA"*AF"NUMERO DA LINHA"%;2))
+    "CST COFINS": ,#Código de Situação Tributária do COFINS. Deve conter 2 digitos. Exemplo: 98. Formato: Numérico inteiro
+    "%COFINS": ,#Alíquota do COFINS. Formato: Numérico (percentual)
+    "Base COFINS": ,#Base de cálculo do COFINS. Formato: Numérico (decimal)
+    "Valor COFINS": ,#Forula (=ARRED(AK"NUMERO DA LINHA"*AJ"NUMERO DA LINHA"%;2))
+    "CST ICMS": ,#Código de Situação Tributária do ICMS. Deve conter 3 digitos, o primeiro sendo a origem do produto. Exemplo: 100. Formato: Numérico inteiro
+    "%ICMS": ,#Alíquota do ICMS. Formato: Numérico (percentual)
+    "%Red ICMS": ,#Percentual de redução da base de cálculo do ICMS. Formato: Numérico (percentual)
+    "Base ICMS": ,#Base de cálculo do ICMS. Formato: Numérico (decimal)
+    "Valor ICMS": ,#Formula (=ARRED(AP"NUMERO DA LINHA"*AN"NUMERO DA LINHA"%;2))
+    "Valor ICMS ST": #Valor do ICMS Substituição Tributária. Formato: Numérico (decimal)
+}
+
+
+dados_linha = [
+                linha_idx - 2,  # item (numeração sequencial)
+                item.get('codigo', ''),
+                item.get('cfop', ''),
+                float(item.get('quantidade', 0)) if item.get('quantidade') else 0,
+                float(item.get('valorUnitario', 0)) if item.get('valorUnitario') else 0,
+                f"=D{linha_idx}*E{linha_idx}",  # valor total (fórmula)
+                float(item.get('seguro', 0)) if item.get('seguro') else 0,
+                float(item.get('frete', 0)) if item.get('frete') else 0,
+                float(item.get('desconto', 0)) if item.get('desconto') else 0,
+                float(item.get('outrasDespesas', 0)) if item.get('outrasDespesas') else 0,
+                item.get('numeroDI', ''),
+                item.get('dataRegistro', ''),
+                item.get('codigoExportador', ''),
+                int(item.get('viaTransporte', 0)) if item.get('viaTransporte') else 0,
+                float(item.get('valorAFRMM', 0)) if item.get('valorAFRMM') else 0,
+                item.get('desembaracoUF', ''),
+                item.get('desembaracoLocal', ''),
+                item.get('desembaracoData', ''),
+                int(item.get('adicao', 0)) if item.get('adicao') else 0,
+                int(item.get('itemAdicao', 0)) if item.get('itemAdicao') else 0,
+                item.get('codigoFabricante', ''),
+                float(item.get('percentualII', 0)) if item.get('percentualII') else 0,
+                f"=ROUND(F{linha_idx}*W{linha_idx}/100,2)",  # Base II (fórmula)
+                f"=ROUND(X{linha_idx}*W{linha_idx}/100,2)",  # Valor II (fórmula)
+                float(item.get('despesasAduaneiras', 0)) if item.get('despesasAduaneiras') else 0,
+                float(item.get('valorIOF', 0)) if item.get('valorIOF') else 0,
+                int(item.get('cstIPI', 0)) if item.get('cstIPI') else 0,
+                float(item.get('percentualIPI', 0)) if item.get('percentualIPI') else 0,
+                float(item.get('baseIPI', 0)) if item.get('baseIPI') else 0,
+                f"=ROUND(AC{linha_idx}*AB{linha_idx}/100,2)",  # Valor IPI (fórmula)
+                int(item.get('cstPIS', 0)) if item.get('cstPIS') else 0,
+                float(item.get('percentualPIS', 0)) if item.get('percentualPIS') else 0,
+                float(item.get('basePIS', 0)) if item.get('basePIS') else 0,
+                f"=ROUND(AG{linha_idx}*AF{linha_idx}/100,2)",  # Valor PIS (fórmula)
+                int(item.get('cstCOFINS', 0)) if item.get('cstCOFINS') else 0,
+                float(item.get('percentualCOFINS', 0)) if item.get('percentualCOFINS') else 0,
+                float(item.get('baseCOFINS', 0)) if item.get('baseCOFINS') else 0,
+                f"=ROUND(AK{linha_idx}*AJ{linha_idx}/100,2)",  # Valor COFINS (fórmula)
+                int(item.get('cstICMS', 0)) if item.get('cstICMS') else 0,
+                float(item.get('percentualICMS', 0)) if item.get('percentualICMS') else 0,
+                float(item.get('percentualRedICMS', 0)) if item.get('percentualRedICMS') else 0,
+                float(item.get('baseICMS', 0)) if item.get('baseICMS') else 0,
+                f"=ROUND(AP{linha_idx}*AN{linha_idx}/100,2)",  # Valor ICMS (fórmula)
+                float(item.get('valorICMSST', 0)) if item.get('valorICMSST') else 0
+            ]
+
