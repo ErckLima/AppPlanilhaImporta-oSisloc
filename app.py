@@ -23,7 +23,7 @@ def home():
 
 @app.route("/converter-xls", methods=["GET", "POST"])
 def converter_xls():
-    """Rota para converter arquivo XLSX para XLS com melhor tratamento de erros"""
+    """Rota para converter arquivo XLSX para XLS preservando fórmulas"""
     if request.method == "GET":
         return render_template("converter.html")
     
@@ -53,8 +53,9 @@ def converter_xls():
                         return jsonify({'erro': 'Arquivo não é um Excel válido (nem XLSX nem XLS)'}), 400
                 
                 # Segunda verificação: consegue abrir com openpyxl?
+                # IMPORTANTE: data_only=False para preservar fórmulas
                 try:
-                    wb_xlsx = load_workbook(temp_path, read_only=True, data_only=True)
+                    wb_xlsx = load_workbook(temp_path, read_only=True, data_only=False)
                     ws_xlsx = wb_xlsx.active
                 except Exception as e:
                     return jsonify({'erro': f'Erro ao abrir arquivo XLSX: {str(e)}'}), 400
@@ -76,38 +77,61 @@ def converter_xls():
                 # Contador de linhas e colunas processadas
                 rows_processed = 0
                 cols_processed = 0
+                formulas_converted = 0
                 
-                # Copia os dados do XLSX para XLS
-                for row_idx, row in enumerate(ws_xlsx.iter_rows(values_only=True)):
+                # Copia os dados do XLSX para XLS PRESERVANDO FÓRMULAS
+                # MUDANÇA PRINCIPAL: usar iter_rows() sem values_only para acessar objetos Cell
+                for row_idx, row in enumerate(ws_xlsx.iter_rows()):
                     if row_idx >= 65535:  # Limite do XLS
                         break
                     
                     row_has_data = False
-                    for col_idx, cell_value in enumerate(row):
+                    for col_idx, cell in enumerate(row):
                         if col_idx >= 255:  # Limite do XLS
                             break
                         
-                        if cell_value is not None:
+                        if cell.value is not None:
                             row_has_data = True
                             cols_processed = max(cols_processed, col_idx + 1)
                             
                             try:
-                                # Aplica estilo de cabeçalho na primeira linha
-                                if row_idx == 0:
-                                    ws_xls.write(row_idx, col_idx, str(cell_value), header_style)
-                                else:
-                                    # Trata diferentes tipos de dados
-                                    if isinstance(cell_value, (int, float)):
-                                        ws_xls.write(row_idx, col_idx, cell_value, number_style)
-                                    elif isinstance(cell_value, bool):
-                                        ws_xls.write(row_idx, col_idx, str(cell_value))
+                                # NOVA LÓGICA: Verifica se a célula contém fórmula
+                                if hasattr(cell, 'data_type') and cell.data_type == 'f':
+                                    # É uma fórmula - preserva no XLS
+                                    formula_xlsx = str(cell.value)
+                                    
+                                    # Remove o '=' inicial se presente (xlwt adiciona automaticamente)
+                                    if formula_xlsx.startswith('='):
+                                        formula_xls = formula_xlsx[1:]
                                     else:
-                                        # Converte para string e limita o tamanho
-                                        str_value = str(cell_value)[:32767]  # Limite do XLS
-                                        ws_xls.write(row_idx, col_idx, str_value)
+                                        formula_xls = formula_xlsx
+                                    
+                                    # Escreve a fórmula no XLS usando xlwt.Formula
+                                    ws_xls.write(row_idx, col_idx, xlwt.Formula(formula_xls))
+                                    formulas_converted += 1
+                                    
+                                else:
+                                    # Não é fórmula - trata como valor normal
+                                    if row_idx == 0:
+                                        # Aplica estilo de cabeçalho na primeira linha
+                                        ws_xls.write(row_idx, col_idx, str(cell.value), header_style)
+                                    else:
+                                        # Trata diferentes tipos de dados
+                                        if isinstance(cell.value, (int, float)):
+                                            ws_xls.write(row_idx, col_idx, cell.value, number_style)
+                                        elif isinstance(cell.value, bool):
+                                            ws_xls.write(row_idx, col_idx, str(cell.value))
+                                        else:
+                                            # Converte para string e limita o tamanho
+                                            str_value = str(cell.value)[:32767]  # Limite do XLS
+                                            ws_xls.write(row_idx, col_idx, str_value)
+                                            
                             except Exception as cell_error:
                                 # Se der erro em uma célula específica, escreve como string
-                                ws_xls.write(row_idx, col_idx, str(cell_value)[:32767])
+                                try:
+                                    ws_xls.write(row_idx, col_idx, str(cell.value)[:32767])
+                                except:
+                                    ws_xls.write(row_idx, col_idx, "ERRO_CONVERSAO")
                     
                     if row_has_data:
                         rows_processed = row_idx + 1
@@ -125,7 +149,7 @@ def converter_xls():
                 filename = f"{nome_original}_convertido.xls"
                 
                 # Log de informações da conversão
-                print(f"Conversão concluída: {rows_processed} linhas, {cols_processed} colunas")
+                print(f"Conversão concluída: {rows_processed} linhas, {cols_processed} colunas, {formulas_converted} fórmulas preservadas")
                 
                 return send_file(
                     output,
@@ -144,6 +168,67 @@ def converter_xls():
         except Exception as e:
             return jsonify({'erro': f'Erro inesperado: {str(e)}'}), 500
 
+# VERSÃO ALTERNATIVA USANDO PANDAS (mais robusta, mas sem preservação de fórmulas)
+@app.route("/converter-xls-pandas", methods=["POST"])
+def converter_xls_pandas():
+    """Versão alternativa usando pandas para conversão (SEM preservação de fórmulas)"""
+    try:
+        import pandas as pd
+        
+        if 'arquivo' not in request.files:
+            return jsonify({'erro': 'Nenhum arquivo foi enviado'}), 400
+        
+        arquivo = request.files['arquivo']
+        if arquivo.filename == '':
+            return jsonify({'erro': 'Nenhum arquivo foi selecionado'}), 400
+        
+        # Salva temporariamente
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as temp_file:
+            arquivo.save(temp_file.name)
+            temp_path = temp_file.name
+        
+        try:
+            # Lê o arquivo XLSX com pandas (NOTA: pandas não preserva fórmulas)
+            df = pd.read_excel(temp_path, engine='openpyxl')
+            
+            # Cria arquivo XLS temporário
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.xls') as temp_xls:
+                temp_xls_path = temp_xls.name
+            
+            # Salva como XLS
+            df.to_excel(temp_xls_path, engine='xlwt', index=False)
+            
+            # Lê o arquivo XLS gerado
+            with open(temp_xls_path, 'rb') as f:
+                output = BytesIO(f.read())
+            
+            # Remove arquivos temporários
+            os.unlink(temp_path)
+            os.unlink(temp_xls_path)
+            
+            # Gera nome do arquivo
+            nome_original = arquivo.filename.rsplit('.', 1)[0]
+            filename = f"{nome_original}_convertido_pandas.xls"
+            
+            return send_file(
+                output,
+                as_attachment=True,
+                download_name=filename,
+                mimetype='application/vnd.ms-excel'
+            )
+            
+        except Exception as e:
+            # Limpa arquivos temporários em caso de erro
+            try:
+                os.unlink(temp_path)
+            except:
+                pass
+            return jsonify({'erro': f'Erro na conversão com pandas: {str(e)}'}), 500
+            
+    except ImportError:
+        return jsonify({'erro': 'Pandas não está instalado. Use a rota principal que preserva fórmulas.'}), 500
+    except Exception as e:
+        return jsonify({'erro': f'Erro inesperado: {str(e)}'}), 500
 
 @app.route("/importar", methods=["POST"])
 def importar():
