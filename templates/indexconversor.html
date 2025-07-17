@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor de Planilhas Excel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 3em;
+            margin-bottom: 15px;
+            font-weight: 300;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.2em;
+            line-height: 1.6;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .converters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .converter-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .converter-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            border-color: #667eea;
+        }
+
+        .converter-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .converter-title {
+            color: #333;
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .converter-description {
+            color: #666;
+            font-size: 1em;
+            line-height: 1.5;
+            margin-bottom: 25px;
+        }
+
+        .converter-features {
+            text-align: left;
+            margin-bottom: 25px;
+        }
+
+        .converter-features ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .converter-features li {
+            color: #555;
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .converter-features li:before {
+            content: "✓";
+            color: #00b894;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 10px 20px rgba(245, 87, 108, 0.3);
+        }
+
+        .features-section {
+            margin: 50px 0;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+
+        .features-title {
+            color: #333;
+            font-size: 2em;
+            margin-bottom: 30px;
+            font-weight: 300;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+        }
+
+        .feature-item {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .feature-icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+        }
+
+        .feature-title {
+            color: #333;
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .feature-description {
+            color: #666;
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+
+        .info-section {
+            margin: 40px 0;
+            padding: 25px;
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 15px;
+            color: #856404;
+        }
+
+        .info-section h3 {
+            margin-bottom: 15px;
+            color: #856404;
+        }
+
+        .info-section p {
+            line-height: 1.6;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .header h1 {
+                font-size: 2.2em;
+            }
+
+            .converters-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .converter-card {
+                padding: 20px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Conversor de Planilhas Excel</h1>
+            <p>Converta facilmente entre os formatos XLS e XLSX com preservação de dados e fórmulas</p>
+        </div>
+
+        <div class="converters-grid">
+            <div class="converter-card">
+                <div class="converter-icon">📈</div>
+                <div class="converter-title">XLSX → XLS</div>
+                <div class="converter-description">
+                    Converte arquivos Excel modernos (XLSX) para o formato clássico (XLS)
+                </div>
+                <div class="converter-features">
+                    <ul>
+                        <li>Preserva fórmulas originais</li>
+                        <li>Mantém formatação básica</li>
+                        <li>Compatível com Excel antigo</li>
+                        <li>Processamento robusto</li>
+                    </ul>
+                </div>
+                <a href="/converter-xls" class="btn">Converter XLSX → XLS</a>
+            </div>
+
+            <div class="converter-card">
+                <div class="converter-icon">📊</div>
+                <div class="converter-title">XLS → XLSX</div>
+                <div class="converter-description">
+                    Moderniza arquivos Excel antigos (XLS) para o formato atual (XLSX)
+                </div>
+                <div class="converter-features">
+                    <ul>
+                        <li>Moderniza planilhas antigas</li>
+                        <li>Melhor compatibilidade</li>
+                        <li>Suporte a recursos avançados</li>
+                        <li>Arquivos mais compactos</li>
+                    </ul>
+                </div>
+                <a href="/converter-xlsx" class="btn btn-secondary">Converter XLS → XLSX</a>
+            </div>
+        </div>
+
+        <div class="features-section">
+            <div class="features-title">🚀 Recursos Principais</div>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">🔒</div>
+                    <div class="feature-title">Seguro</div>
+                    <div class="feature-description">
+                        Seus arquivos são processados localmente e removidos após a conversão
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">⚡</div>
+                    <div class="feature-title">Rápido</div>
+                    <div class="feature-description">
+                        Conversão otimizada com processamento eficiente de grandes planilhas
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🎯</div>
+                    <div class="feature-title">Preciso</div>
+                    <div class="feature-description">
+                        Preserva dados, fórmulas e formatação com máxima fidelidade
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">📱</div>
+                    <div class="feature-title">Responsivo</div>
+                    <div class="feature-description">
+                        Interface adaptável para desktop, tablet e dispositivos móveis
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h3>ℹ️ Informações Importantes</h3>
+            <p>
+                <strong>Preservação de Fórmulas:</strong> O conversor XLSX → XLS preserva fórmulas originais usando tecnologia avançada. 
+                O conversor XLS → XLSX pode converter algumas fórmulas para valores calculados devido a limitações do formato XLS antigo.
+                <br><br>
+                <strong>Compatibilidade:</strong> Ambos os conversores respeitam os limites de cada formato (XLS: 65.535 linhas, 255 colunas; XLSX: 1.048.576 linhas, 16.384 colunas).
+            </p>
+        </div>
+
+        <div class="footer">
+            <p>
+                Desenvolvido com ❤️ para facilitar o trabalho com planilhas Excel<br>
+                Suporte aos formatos: .xls, .xlsx | Processamento seguro e eficiente
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+

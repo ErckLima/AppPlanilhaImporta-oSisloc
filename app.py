@@ -21,6 +21,10 @@ app = Flask(__name__)
 def home():
     return render_template("index.html")
 
+@app.route("/indexconversor")
+def indexconversor():
+    return render_template("indexconversor.html")
+
 @app.route("/converter-xls", methods=["GET", "POST"])
 def converter_xls():
     """Rota para converter arquivo XLSX para XLS preservando fórmulas"""
@@ -149,7 +153,7 @@ def converter_xls():
                 filename = f"{nome_original}_convertido.xls"
                 
                 # Log de informações da conversão
-                print(f"Conversão concluída: {rows_processed} linhas, {cols_processed} colunas, {formulas_converted} fórmulas preservadas")
+                print(f"Conversão XLSX->XLS concluída: {rows_processed} linhas, {cols_processed} colunas, {formulas_converted} fórmulas preservadas")
                 
                 return send_file(
                     output,
@@ -168,9 +172,151 @@ def converter_xls():
         except Exception as e:
             return jsonify({'erro': f'Erro inesperado: {str(e)}'}), 500
 
-# VERSÃO ALTERNATIVA USANDO PANDAS (mais robusta, mas sem preservação de fórmulas)
-@app.route("/converter-xls-pandas", methods=["POST"])
-def converter_xls_pandas():
+@app.route("/converter-xlsx", methods=["GET", "POST"])
+def converter_xlsx():
+    """Rota para converter arquivo XLS para XLSX"""
+    if request.method == "GET":
+        return render_template("converter_xlsx.html")
+    
+    if request.method == "POST":
+        try:
+            if 'arquivo' not in request.files:
+                return jsonify({'erro': 'Nenhum arquivo foi enviado'}), 400
+            
+            arquivo = request.files['arquivo']
+            if arquivo.filename == '':
+                return jsonify({'erro': 'Nenhum arquivo foi selecionado'}), 400
+            
+            # Verifica se é um arquivo XLS
+            if not arquivo.filename.lower().endswith('.xls'):
+                return jsonify({'erro': 'Arquivo deve ser uma planilha XLS (.xls)'}), 400
+            
+            # Salva o arquivo temporariamente
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.xls') as temp_file:
+                arquivo.save(temp_file.name)
+                temp_path = temp_file.name
+            
+            try:
+                # Tenta abrir o arquivo XLS
+                try:
+                    wb_xls = xlrd.open_workbook(temp_path, formatting_info=True)
+                    ws_xls = wb_xls.sheet_by_index(0)
+                except Exception as e:
+                    return jsonify({'erro': f'Erro ao abrir arquivo XLS: {str(e)}'}), 400
+                
+                # Cria um novo workbook XLSX
+                wb_xlsx = Workbook()
+                ws_xlsx = wb_xlsx.active
+                ws_xlsx.title = "Convertido"
+                
+                # Estilos para XLSX
+                header_font = Font(bold=True, color="FFFFFF")
+                header_fill = PatternFill(start_color="0056A4", end_color="0056A4", fill_type="solid")
+                header_alignment = Alignment(horizontal="center", vertical="center")
+                border = Border(
+                    left=Side(style='thin'),
+                    right=Side(style='thin'),
+                    top=Side(style='thin'),
+                    bottom=Side(style='thin')
+                )
+                
+                # Contador de dados processados
+                rows_processed = 0
+                cols_processed = 0
+                
+                # Tipos de célula no xlrd
+                XL_CELL_EMPTY = 0
+                XL_CELL_TEXT = 1
+                XL_CELL_NUMBER = 2
+                XL_CELL_DATE = 3
+                XL_CELL_BOOLEAN = 4
+                XL_CELL_ERROR = 5
+                
+                # Copia os dados do XLS para XLSX
+                for row_idx in range(ws_xls.nrows):
+                    row_has_data = False
+                    for col_idx in range(ws_xls.ncols):
+                        cell_xls = ws_xls.cell(row_idx, col_idx)
+                        cell_xlsx = ws_xlsx.cell(row=row_idx + 1, column=col_idx + 1)
+                        
+                        try:
+                            if cell_xls.ctype == XL_CELL_EMPTY:
+                                continue
+                            elif cell_xls.ctype == XL_CELL_TEXT:
+                                cell_xlsx.value = cell_xls.value
+                                row_has_data = True
+                            elif cell_xls.ctype == XL_CELL_NUMBER:
+                                cell_xlsx.value = cell_xls.value
+                                row_has_data = True
+                            elif cell_xls.ctype == XL_CELL_DATE:
+                                cell_xlsx.value = cell_xls.value
+                                row_has_data = True
+                            elif cell_xls.ctype == XL_CELL_BOOLEAN:
+                                cell_xlsx.value = bool(cell_xls.value)
+                                row_has_data = True
+                            elif cell_xls.ctype == XL_CELL_ERROR:
+                                cell_xlsx.value = f"#ERROR#{cell_xls.value}"
+                                row_has_data = True
+                            else:
+                                # Tipo desconhecido ou fórmula (xlrd 2.0+ não suporta fórmulas)
+                                cell_xlsx.value = cell_xls.value
+                                row_has_data = True
+                            
+                            # Aplica formatação para cabeçalho (primeira linha)
+                            if row_idx == 0 and cell_xlsx.value:
+                                cell_xlsx.font = header_font
+                                cell_xlsx.fill = header_fill
+                                cell_xlsx.alignment = header_alignment
+                            
+                            # Aplica borda
+                            cell_xlsx.border = border
+                            
+                            if row_has_data:
+                                cols_processed = max(cols_processed, col_idx + 1)
+                            
+                        except Exception as cell_error:
+                            # Em caso de erro, escreve como string
+                            cell_xlsx.value = str(cell_xls.value) if cell_xls.value else ""
+                            cell_xlsx.border = border
+                    
+                    if row_has_data:
+                        rows_processed = row_idx + 1
+                
+                # Ajusta largura das colunas
+                for col in range(1, cols_processed + 1):
+                    column_letter = get_column_letter(col)
+                    ws_xlsx.column_dimensions[column_letter].width = 15
+                
+                # Salva o arquivo XLSX em memória
+                output = BytesIO()
+                wb_xlsx.save(output)
+                output.seek(0)
+                
+                # Gera nome do arquivo baseado no original
+                nome_original = arquivo.filename.rsplit('.', 1)[0]
+                filename = f"{nome_original}_convertido.xlsx"
+                
+                # Log de informações da conversão
+                print(f"Conversão XLS->XLSX concluída: {rows_processed} linhas, {cols_processed} colunas")
+                
+                return send_file(
+                    output,
+                    as_attachment=True,
+                    download_name=filename,
+                    mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                )
+                
+            finally:
+                # Remove o arquivo temporário
+                try:
+                    os.unlink(temp_path)
+                except:
+                    pass
+            
+        except Exception as e:
+            return jsonify({'erro': f'Erro inesperado: {str(e)}'}), 500
+
+
     """Versão alternativa usando pandas para conversão (SEM preservação de fórmulas)"""
     try:
         import pandas as pd
