@@ -109,6 +109,12 @@
             transform: translateY(0);
         }
 
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .btn-secondary {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
@@ -298,44 +304,65 @@
     </div>
 
     <script>
-        const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('fileInput');
-        const fileInfo = document.getElementById('fileInfo');
-        const fileName = document.getElementById('fileName');
-        const fileSize = document.getElementById('fileSize');
-        const convertBtn = document.getElementById('convertBtn');
-        const convertPandasBtn = document.getElementById('convertPandasBtn');
-        const errorMessage = document.getElementById('errorMessage');
-        const successMessage = document.getElementById('successMessage');
-        const progressBar = document.getElementById('progressBar');
-        const progressFill = document.getElementById('progressFill');
-        const uploadForm = document.getElementById('uploadForm');
+        // Função para verificar se elemento existe antes de usar
+        function getElement(id) {
+            const element = document.getElementById(id);
+            if (!element) {
+                console.warn(`Elemento com ID '${id}' não encontrado`);
+            }
+            return element;
+        }
+
+        // Obter elementos com verificação
+        const uploadArea = getElement('uploadArea');
+        const fileInput = getElement('fileInput');
+        const fileInfo = getElement('fileInfo');
+        const fileName = getElement('fileName');
+        const fileSize = getElement('fileSize');
+        const convertBtn = getElement('convertBtn');
+        const convertPandasBtn = getElement('convertPandasBtn');
+        const errorMessage = getElement('errorMessage');
+        const successMessage = getElement('successMessage');
+        const progressBar = getElement('progressBar');
+        const progressFill = getElement('progressFill');
+        const uploadForm = getElement('uploadForm');
 
         // Drag and drop functionality
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
+        if (uploadArea) {
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
 
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
 
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                handleFileSelect(files[0]);
-            }
-        });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileSelect(files[0]);
+                }
+            });
 
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                handleFileSelect(e.target.files[0]);
-            }
-        });
+            // Click to upload
+            uploadArea.addEventListener('click', (e) => {
+                if (fileInput && e.target !== fileInput) {
+                    fileInput.click();
+                }
+            });
+        }
+
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFileSelect(e.target.files[0]);
+                }
+            });
+        }
 
         function handleFileSelect(file) {
             // Validate file type
@@ -345,11 +372,11 @@
             }
 
             // Show file info
-            fileName.textContent = file.name;
-            fileSize.textContent = formatFileSize(file.size);
-            fileInfo.classList.add('show');
-            convertBtn.style.display = 'inline-block';
-            convertPandasBtn.style.display = 'inline-block';
+            if (fileName) fileName.textContent = file.name;
+            if (fileSize) fileSize.textContent = formatFileSize(file.size);
+            if (fileInfo) fileInfo.classList.add('show');
+            if (convertBtn) convertBtn.style.display = 'inline-block';
+            if (convertPandasBtn) convertPandasBtn.style.display = 'inline-block';
             
             hideMessages();
         }
@@ -363,32 +390,40 @@
         }
 
         function showError(message) {
-            errorMessage.textContent = message;
-            errorMessage.style.display = 'block';
-            successMessage.style.display = 'none';
+            if (errorMessage) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+            }
+            if (successMessage) {
+                successMessage.style.display = 'none';
+            }
         }
 
         function showSuccess(message) {
-            successMessage.textContent = message;
-            successMessage.style.display = 'block';
-            errorMessage.style.display = 'none';
+            if (successMessage) {
+                successMessage.textContent = message;
+                successMessage.style.display = 'block';
+            }
+            if (errorMessage) {
+                errorMessage.style.display = 'none';
+            }
         }
 
         function hideMessages() {
-            errorMessage.style.display = 'none';
-            successMessage.style.display = 'none';
+            if (errorMessage) errorMessage.style.display = 'none';
+            if (successMessage) successMessage.style.display = 'none';
         }
 
         function showProgress() {
-            progressBar.style.display = 'block';
-            progressFill.style.width = '0%';
+            if (progressBar) progressBar.style.display = 'block';
+            if (progressFill) progressFill.style.width = '0%';
             
             // Simulate progress
             let progress = 0;
             const interval = setInterval(() => {
                 progress += Math.random() * 30;
                 if (progress > 90) progress = 90;
-                progressFill.style.width = progress + '%';
+                if (progressFill) progressFill.style.width = progress + '%';
             }, 200);
             
             return interval;
@@ -396,27 +431,27 @@
 
         function hideProgress(interval) {
             if (interval) clearInterval(interval);
-            progressFill.style.width = '100%';
+            if (progressFill) progressFill.style.width = '100%';
             setTimeout(() => {
-                progressBar.style.display = 'none';
-                progressFill.style.width = '0%';
+                if (progressBar) progressBar.style.display = 'none';
+                if (progressFill) progressFill.style.width = '0%';
             }, 500);
         }
 
         // Main conversion function
         async function convertFile(usePandas = false) {
-            const file = fileInput.files[0];
-            if (!file) {
+            if (!fileInput || !fileInput.files[0]) {
                 showError('Por favor, selecione um arquivo primeiro');
                 return;
             }
 
+            const file = fileInput.files[0];
             const formData = new FormData();
             formData.append('arquivo', file);
 
             const progressInterval = showProgress();
-            convertBtn.disabled = true;
-            convertPandasBtn.disabled = true;
+            if (convertBtn) convertBtn.disabled = true;
+            if (convertPandasBtn) convertPandasBtn.disabled = true;
 
             try {
                 const endpoint = usePandas ? '/converter-xlsx-pandas' : '/converter-xlsx';
@@ -459,33 +494,32 @@
                 hideProgress(progressInterval);
                 showError(`❌ Erro de conexão: ${error.message}`);
             } finally {
-                convertBtn.disabled = false;
-                convertPandasBtn.disabled = false;
+                if (convertBtn) convertBtn.disabled = false;
+                if (convertPandasBtn) convertPandasBtn.disabled = false;
             }
         }
 
-        // Event listeners
-        uploadForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            convertFile(false);
-        });
+        // Event listeners com verificação de existência
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                convertFile(false);
+            });
+        }
 
-        convertBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            convertFile(false);
-        });
+        if (convertBtn) {
+            convertBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                convertFile(false);
+            });
+        }
 
-        convertPandasBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            convertFile(true);
-        });
-
-        // Click to upload
-        uploadArea.addEventListener('click', (e) => {
-            if (e.target !== fileInput) {
-                fileInput.click();
-            }
-        });
+        if (convertPandasBtn) {
+            convertPandasBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                convertFile(true);
+            });
+        }
     </script>
 </body>
 </html>

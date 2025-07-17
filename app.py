@@ -14,6 +14,7 @@ from openpyxl import load_workbook
 import zipfile
 import tempfile
 import os
+import traceback
 
 app = Flask(__name__)
 
@@ -378,78 +379,184 @@ def converter_xlsx():
 
 @app.route("/importar", methods=["POST"])
 def importar():
-    """Importa dados de uma planilha existente para edição"""
+    """Importa dados de uma planilha existente para edição - VERSÃO CORRIGIDA"""
     try:
+        print("=== INÍCIO DA IMPORTAÇÃO ===")
+        
         if 'arquivo' not in request.files:
+            print("Erro: Nenhum arquivo foi enviado")
             return jsonify({'erro': 'Nenhum arquivo foi enviado'}), 400
         
         arquivo = request.files['arquivo']
         if arquivo.filename == '':
+            print("Erro: Nenhum arquivo foi selecionado")
             return jsonify({'erro': 'Nenhum arquivo foi selecionado'}), 400
+        
+        print(f"Arquivo recebido: {arquivo.filename}")
         
         # Verifica se é um arquivo Excel
         if not arquivo.filename.lower().endswith(('.xlsx', '.xls')):
+            print("Erro: Arquivo não é Excel")
             return jsonify({'erro': 'Arquivo deve ser uma planilha Excel (.xlsx ou .xls)'}), 400
         
         # Carrega a planilha
-        wb = load_workbook(arquivo)
-        ws = wb.active
+        try:
+            print("Tentando carregar planilha...")
+            wb = load_workbook(arquivo)
+            ws = wb.active
+            print(f"Planilha carregada: {ws.title}, {ws.max_row} linhas, {ws.max_column} colunas")
+        except Exception as e:
+            print(f"Erro ao carregar planilha: {str(e)}")
+            print(f"Traceback: {traceback.format_exc()}")
+            return jsonify({'erro': f'Erro ao carregar planilha: {str(e)}'}), 400
         
         dados_importados = []
+        linhas_processadas = 0
+        linhas_com_dados = 0
+        erros_por_linha = []
+        
+        # Examinar a estrutura primeiro
+        print("=== EXAMINANDO ESTRUTURA ===")
+        print("Cabeçalhos (linha 1):")
+        for col in range(1, min(10, ws.max_column + 1)):
+            valor = ws.cell(row=1, column=col).value
+            print(f"  Col {col}: {repr(valor)}")
         
         # Lê os dados a partir da linha 3 (pula cabeçalho e totais)
+        print("=== PROCESSANDO DADOS ===")
         for linha in range(3, ws.max_row + 1):
-            # Verifica se a linha tem dados (pelo menos o código do produto)
-            codigo = ws.cell(row=linha, column=2).value
-            if not codigo:
-                continue
-                
-            item = {
-                'codigo': str(codigo) if codigo else '',
-                'cfop': str(ws.cell(row=linha, column=3).value) if ws.cell(row=linha, column=3).value else '',
-                'quantidade': float(ws.cell(row=linha, column=4).value) if ws.cell(row=linha, column=4).value else 0,
-                'valorUnitario': float(ws.cell(row=linha, column=5).value) if ws.cell(row=linha, column=5).value else 0,
-                'seguro': float(ws.cell(row=linha, column=7).value) if ws.cell(row=linha, column=7).value else 0,
-                'frete': float(ws.cell(row=linha, column=8).value) if ws.cell(row=linha, column=8).value else 0,
-                'desconto': float(ws.cell(row=linha, column=9).value) if ws.cell(row=linha, column=9).value else 0,
-                'outrasDespesas': float(ws.cell(row=linha, column=10).value) if ws.cell(row=linha, column=10).value else 0,
-                'numeroDI': str(ws.cell(row=linha, column=11).value) if ws.cell(row=linha, column=11).value else '',
-                'dataRegistro': str(ws.cell(row=linha, column=12).value) if ws.cell(row=linha, column=12).value else '',
-                'codigoExportador': str(ws.cell(row=linha, column=13).value) if ws.cell(row=linha, column=13).value else '',
-                'viaTransporte': int(ws.cell(row=linha, column=14).value) if ws.cell(row=linha, column=14).value else 0,
-                'valorAFRMM': float(ws.cell(row=linha, column=15).value) if ws.cell(row=linha, column=15).value else 0,
-                'desembaracoUF': str(ws.cell(row=linha, column=16).value) if ws.cell(row=linha, column=16).value else '',
-                'desembaracoLocal': str(ws.cell(row=linha, column=17).value) if ws.cell(row=linha, column=17).value else '',
-                'desembaracoData': str(ws.cell(row=linha, column=18).value) if ws.cell(row=linha, column=18).value else '',
-                'adicao': int(ws.cell(row=linha, column=19).value) if ws.cell(row=linha, column=19).value else 0,
-                'itemAdicao': int(ws.cell(row=linha, column=20).value) if ws.cell(row=linha, column=20).value else 0,
-                'codigoFabricante': str(ws.cell(row=linha, column=21).value) if ws.cell(row=linha, column=21).value else '',
-                'percentualII': float(ws.cell(row=linha, column=22).value) if ws.cell(row=linha, column=22).value else 0,
-                'baseII': float(ws.cell(row=linha, column=23).value) if ws.cell(row=linha, column=23).value else 0,
-                'despesasAduaneiras': float(ws.cell(row=linha, column=25).value) if ws.cell(row=linha, column=25).value else 0,
-                'valorIOF': float(ws.cell(row=linha, column=26).value) if ws.cell(row=linha, column=26).value else 0,
-                'cstIPI': str(ws.cell(row=linha, column=27).value) if ws.cell(row=linha, column=27).value else 00,
-                'percentualIPI': float(ws.cell(row=linha, column=28).value) if ws.cell(row=linha, column=28).value else 0,
-                'baseIPI': float(ws.cell(row=linha, column=29).value) if ws.cell(row=linha, column=29).value else 0,
-                'cstPIS': int(ws.cell(row=linha, column=31).value) if ws.cell(row=linha, column=31).value else 0,
-                'percentualPIS': float(ws.cell(row=linha, column=32).value) if ws.cell(row=linha, column=32).value else 0,
-                'basePIS': float(ws.cell(row=linha, column=33).value) if ws.cell(row=linha, column=33).value else 0,
-                'cstCOFINS': int(ws.cell(row=linha, column=35).value) if ws.cell(row=linha, column=35).value else 0,
-                'percentualCOFINS': float(ws.cell(row=linha, column=36).value) if ws.cell(row=linha, column=36).value else 0,
-                'baseCOFINS': float(ws.cell(row=linha, column=37).value) if ws.cell(row=linha, column=37).value else 0,
-                'cstICMS': int(ws.cell(row=linha, column=39).value) if ws.cell(row=linha, column=39).value else 0,
-                'percentualICMS': float(ws.cell(row=linha, column=40).value) if ws.cell(row=linha, column=40).value else 0,
-                'percentualRedICMS': float(ws.cell(row=linha, column=41).value) if ws.cell(row=linha, column=41).value else 0,
-                'baseICMS': float(ws.cell(row=linha, column=42).value) if ws.cell(row=linha, column=42).value else 0,
-                'valorICMSST': float(ws.cell(row=linha, column=44).value) if ws.cell(row=linha, column=44).value else 0
-            }
+            linhas_processadas += 1
+            print(f"Processando linha {linha}")
             
-            dados_importados.append(item)
+            try:
+                # Verifica se a linha tem dados (pelo menos o código do produto)
+                codigo = ws.cell(row=linha, column=2).value
+                print(f"  Código (col 2): {repr(codigo)}")
+                
+                if not codigo or str(codigo).strip() == "":
+                    print(f"  Linha {linha} sem código válido, pulando...")
+                    continue
+                
+                linhas_com_dados += 1
+                print(f"  Linha {linha} tem dados, processando...")
+                
+                # Função auxiliar para obter valor seguro
+                def get_safe_value(row, col, tipo='str', default=None):
+                    try:
+                        valor = ws.cell(row=row, column=col).value
+                        if valor is None:
+                            return default if default is not None else ('' if tipo == 'str' else 0)
+                        
+                        if tipo == 'str':
+                            return str(valor).strip()
+                        elif tipo == 'float':
+                            return float(valor) if valor != '' else 0
+                        elif tipo == 'int':
+                            return int(valor) if valor != '' else 0
+                        else:
+                            return valor
+                    except Exception as e:
+                        print(f"    Erro ao obter valor linha {row}, col {col}: {e}")
+                        return default if default is not None else ('' if tipo == 'str' else 0)
+                
+                # Criar item com tratamento de erro individual para cada campo
+                item = {}
+                
+                # Campos obrigatórios
+                item['codigo'] = get_safe_value(linha, 2, 'str', '')
+                item['cfop'] = get_safe_value(linha, 3, 'str', '')
+                item['quantidade'] = get_safe_value(linha, 4, 'float', 0)
+                item['valorUnitario'] = get_safe_value(linha, 5, 'float', 0)
+                
+                # Campos opcionais
+                item['seguro'] = get_safe_value(linha, 7, 'float', 0)
+                item['frete'] = get_safe_value(linha, 8, 'float', 0)
+                item['desconto'] = get_safe_value(linha, 9, 'float', 0)
+                item['outrasDespesas'] = get_safe_value(linha, 10, 'float', 0)
+                item['numeroDI'] = get_safe_value(linha, 11, 'str', '')
+                item['dataRegistro'] = get_safe_value(linha, 12, 'str', '')
+                item['codigoExportador'] = get_safe_value(linha, 13, 'str', '')
+                item['viaTransporte'] = get_safe_value(linha, 14, 'int', 0)
+                item['valorAFRMM'] = get_safe_value(linha, 15, 'float', 0)
+                item['desembaracoUF'] = get_safe_value(linha, 16, 'str', '')
+                item['desembaracoLocal'] = get_safe_value(linha, 17, 'str', '')
+                item['desembaracoData'] = get_safe_value(linha, 18, 'str', '')
+                item['adicao'] = get_safe_value(linha, 19, 'int', 0)
+                item['itemAdicao'] = get_safe_value(linha, 20, 'int', 0)
+                item['codigoFabricante'] = get_safe_value(linha, 21, 'str', '')
+                item['percentualII'] = get_safe_value(linha, 22, 'float', 0)
+                item['baseII'] = get_safe_value(linha, 23, 'float', 0)
+                item['despesasAduaneiras'] = get_safe_value(linha, 25, 'float', 0)
+                item['valorIOF'] = get_safe_value(linha, 26, 'float', 0)
+                item['cstIPI'] = get_safe_value(linha, 27, 'str', '00')
+                item['percentualIPI'] = get_safe_value(linha, 28, 'float', 0)
+                item['baseIPI'] = get_safe_value(linha, 29, 'float', 0)
+                item['cstPIS'] = get_safe_value(linha, 31, 'int', 0)
+                item['percentualPIS'] = get_safe_value(linha, 32, 'float', 0)
+                item['basePIS'] = get_safe_value(linha, 33, 'float', 0)
+                item['cstCOFINS'] = get_safe_value(linha, 35, 'int', 0)
+                item['percentualCOFINS'] = get_safe_value(linha, 36, 'float', 0)
+                item['baseCOFINS'] = get_safe_value(linha, 37, 'float', 0)
+                item['cstICMS'] = get_safe_value(linha, 39, 'int', 0)
+                item['percentualICMS'] = get_safe_value(linha, 40, 'float', 0)
+                item['percentualRedICMS'] = get_safe_value(linha, 41, 'float', 0)
+                item['baseICMS'] = get_safe_value(linha, 42, 'float', 0)
+                item['valorICMSST'] = get_safe_value(linha, 44, 'float', 0)
+                
+                dados_importados.append(item)
+                print(f"  Item criado com sucesso: código={item['codigo']}")
+                
+            except Exception as e:
+                erro_msg = f"Erro na linha {linha}: {str(e)}"
+                print(f"  ERRO: {erro_msg}")
+                erros_por_linha.append(erro_msg)
+                # Continua processando outras linhas mesmo com erro
         
-        return jsonify({'dados': dados_importados, 'sucesso': True})
+        print("=== RESULTADO DA IMPORTAÇÃO ===")
+        print(f"Linhas processadas: {linhas_processadas}")
+        print(f"Linhas com dados: {linhas_com_dados}")
+        print(f"Itens importados: {len(dados_importados)}")
+        print(f"Erros encontrados: {len(erros_por_linha)}")
+        
+        # Verificar se encontrou dados válidos
+        if len(dados_importados) == 0:
+            if linhas_com_dados == 0:
+                mensagem_erro = "A planilha não contém dados válidos. Verifique se:\n"
+                mensagem_erro += "- Os dados estão nas linhas corretas (a partir da linha 3)\n"
+                mensagem_erro += "- A coluna 2 contém os códigos dos produtos\n"
+                mensagem_erro += "- O arquivo não está vazio ou corrompido"
+                print(f"Erro: {mensagem_erro}")
+                return jsonify({'erro': mensagem_erro}), 400
+            else:
+                mensagem_erro = f"Encontradas {linhas_com_dados} linhas com códigos, mas nenhuma pôde ser processada."
+                if erros_por_linha:
+                    mensagem_erro += f"\nErros encontrados:\n" + "\n".join(erros_por_linha[:5])
+                print(f"Erro: {mensagem_erro}")
+                return jsonify({'erro': mensagem_erro}), 400
+        
+        # Sucesso
+        resultado = {
+            'dados': dados_importados, 
+            'sucesso': True,
+            'estatisticas': {
+                'linhas_processadas': linhas_processadas,
+                'linhas_com_dados': linhas_com_dados,
+                'itens_importados': len(dados_importados),
+                'erros': len(erros_por_linha)
+            }
+        }
+        
+        if erros_por_linha:
+            resultado['avisos'] = erros_por_linha[:10]  # Máximo 10 avisos
+        
+        print("Importação concluída com sucesso!")
+        return jsonify(resultado)
         
     except Exception as e:
-        return jsonify({'erro': f'Erro ao importar planilha: {str(e)}'}), 500
+        erro_msg = f'Erro inesperado ao importar planilha: {str(e)}'
+        print(f"ERRO CRÍTICO: {erro_msg}")
+        print(f"Traceback completo: {traceback.format_exc()}")
+        return jsonify({'erro': erro_msg}), 500
 
 @app.route("/exportar", methods=["POST"])
 def exportar():
