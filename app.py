@@ -6,12 +6,205 @@ from io import BytesIO
 import datetime
 import json
 import os
+import xlwt
+from openpyxl import load_workbook
+import xlwt
+import xlrd
+from openpyxl import load_workbook
+import zipfile
+import tempfile
+import os
 
 app = Flask(__name__)
 
 @app.route("/")
 def home():
     return render_template("index.html")
+
+@app.route("/converter-xls", methods=["GET", "POST"])
+def converter_xls():
+    """Rota para converter arquivo XLSX para XLS com melhor tratamento de erros"""
+    if request.method == "GET":
+        return render_template("converter.html")
+    
+    if request.method == "POST":
+        try:
+            if 'arquivo' not in request.files:
+                return jsonify({'erro': 'Nenhum arquivo foi enviado'}), 400
+            
+            arquivo = request.files['arquivo']
+            if arquivo.filename == '':
+                return jsonify({'erro': 'Nenhum arquivo foi selecionado'}), 400
+            
+            # Salva o arquivo temporariamente para análise
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as temp_file:
+                arquivo.save(temp_file.name)
+                temp_path = temp_file.name
+            
+            try:
+                # Primeira verificação: é um arquivo ZIP válido?
+                if not zipfile.is_zipfile(temp_path):
+                    # Pode ser um arquivo XLS disfarçado de XLSX
+                    try:
+                        # Tenta abrir como XLS
+                        xlrd_book = xlrd.open_workbook(temp_path)
+                        return jsonify({'erro': 'Este arquivo parece ser XLS, não XLSX. Ele já está no formato desejado!'}), 400
+                    except:
+                        return jsonify({'erro': 'Arquivo não é um Excel válido (nem XLSX nem XLS)'}), 400
+                
+                # Segunda verificação: consegue abrir com openpyxl?
+                try:
+                    wb_xlsx = load_workbook(temp_path, read_only=True, data_only=True)
+                    ws_xlsx = wb_xlsx.active
+                except Exception as e:
+                    return jsonify({'erro': f'Erro ao abrir arquivo XLSX: {str(e)}'}), 400
+                
+                # Cria um novo workbook XLS usando xlwt
+                wb_xls = xlwt.Workbook()
+                ws_xls = wb_xls.add_sheet("Planilha", cell_overwrite_ok=True)
+                
+                # Define estilos básicos para xlwt
+                header_style = xlwt.XFStyle()
+                header_font = xlwt.Font()
+                header_font.bold = True
+                header_style.font = header_font
+                
+                # Estilo para números
+                number_style = xlwt.XFStyle()
+                number_style.num_format_str = '0.00'
+                
+                # Contador de linhas e colunas processadas
+                rows_processed = 0
+                cols_processed = 0
+                
+                # Copia os dados do XLSX para XLS
+                for row_idx, row in enumerate(ws_xlsx.iter_rows(values_only=True)):
+                    if row_idx >= 65535:  # Limite do XLS
+                        break
+                    
+                    row_has_data = False
+                    for col_idx, cell_value in enumerate(row):
+                        if col_idx >= 255:  # Limite do XLS
+                            break
+                        
+                        if cell_value is not None:
+                            row_has_data = True
+                            cols_processed = max(cols_processed, col_idx + 1)
+                            
+                            try:
+                                # Aplica estilo de cabeçalho na primeira linha
+                                if row_idx == 0:
+                                    ws_xls.write(row_idx, col_idx, str(cell_value), header_style)
+                                else:
+                                    # Trata diferentes tipos de dados
+                                    if isinstance(cell_value, (int, float)):
+                                        ws_xls.write(row_idx, col_idx, cell_value, number_style)
+                                    elif isinstance(cell_value, bool):
+                                        ws_xls.write(row_idx, col_idx, str(cell_value))
+                                    else:
+                                        # Converte para string e limita o tamanho
+                                        str_value = str(cell_value)[:32767]  # Limite do XLS
+                                        ws_xls.write(row_idx, col_idx, str_value)
+                            except Exception as cell_error:
+                                # Se der erro em uma célula específica, escreve como string
+                                ws_xls.write(row_idx, col_idx, str(cell_value)[:32767])
+                    
+                    if row_has_data:
+                        rows_processed = row_idx + 1
+                
+                # Fecha o workbook XLSX
+                wb_xlsx.close()
+                
+                # Salva o arquivo XLS em memória
+                output = BytesIO()
+                wb_xls.save(output)
+                output.seek(0)
+                
+                # Gera nome do arquivo baseado no original
+                nome_original = arquivo.filename.rsplit('.', 1)[0]
+                filename = f"{nome_original}_convertido.xls"
+                
+                # Log de informações da conversão
+                print(f"Conversão concluída: {rows_processed} linhas, {cols_processed} colunas")
+                
+                return send_file(
+                    output,
+                    as_attachment=True,
+                    download_name=filename,
+                    mimetype='application/vnd.ms-excel'
+                )
+                
+            finally:
+                # Remove o arquivo temporário
+                try:
+                    os.unlink(temp_path)
+                except:
+                    pass
+            
+        except Exception as e:
+            return jsonify({'erro': f'Erro inesperado: {str(e)}'}), 500
+
+# VERSÃO ALTERNATIVA USANDO PANDAS (mais robusta)
+@app.route("/converter-xls-pandas", methods=["POST"])
+def converter_xls_pandas():
+    """Versão alternativa usando pandas para conversão"""
+    try:
+        import pandas as pd
+        
+        if 'arquivo' not in request.files:
+            return jsonify({'erro': 'Nenhum arquivo foi enviado'}), 400
+        
+        arquivo = request.files['arquivo']
+        if arquivo.filename == '':
+            return jsonify({'erro': 'Nenhum arquivo foi selecionado'}), 400
+        
+        # Salva temporariamente
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as temp_file:
+            arquivo.save(temp_file.name)
+            temp_path = temp_file.name
+        
+        try:
+            # Lê o arquivo XLSX com pandas
+            df = pd.read_excel(temp_path, engine='openpyxl')
+            
+            # Cria arquivo XLS temporário
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.xls') as temp_xls:
+                temp_xls_path = temp_xls.name
+            
+            # Salva como XLS
+            df.to_excel(temp_xls_path, engine='xlwt', index=False)
+            
+            # Lê o arquivo XLS gerado
+            with open(temp_xls_path, 'rb') as f:
+                output = BytesIO(f.read())
+            
+            # Remove arquivos temporários
+            os.unlink(temp_path)
+            os.unlink(temp_xls_path)
+            
+            # Gera nome do arquivo
+            nome_original = arquivo.filename.rsplit('.', 1)[0]
+            filename = f"{nome_original}_convertido.xls"
+            
+            return send_file(
+                output,
+                as_attachment=True,
+                download_name=filename,
+                mimetype='application/vnd.ms-excel'
+            )
+            
+        except Exception as e:
+            # Limpa arquivos temporários em caso de erro
+            try:
+                os.unlink(temp_path)
+            except:
+                pass
+            return jsonify({'erro': f'Erro na conversão com pandas: {str(e)}'}), 500
+            
+    except ImportError:
+        return jsonify({'erro': 'Pandas não está instalado. Use a rota principal.'}), 500
+    except Exception as e:
+        return jsonify({'erro': f'Erro inesperado: {str(e)}'}), 500
 
 @app.route("/importar", methods=["POST"])
 def importar():
