@@ -144,67 +144,6 @@ def converter_xls():
         except Exception as e:
             return jsonify({'erro': f'Erro inesperado: {str(e)}'}), 500
 
-# VERSÃO ALTERNATIVA USANDO PANDAS (mais robusta)
-@app.route("/converter-xls-pandas", methods=["POST"])
-def converter_xls_pandas():
-    """Versão alternativa usando pandas para conversão"""
-    try:
-        import pandas as pd
-        
-        if 'arquivo' not in request.files:
-            return jsonify({'erro': 'Nenhum arquivo foi enviado'}), 400
-        
-        arquivo = request.files['arquivo']
-        if arquivo.filename == '':
-            return jsonify({'erro': 'Nenhum arquivo foi selecionado'}), 400
-        
-        # Salva temporariamente
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as temp_file:
-            arquivo.save(temp_file.name)
-            temp_path = temp_file.name
-        
-        try:
-            # Lê o arquivo XLSX com pandas
-            df = pd.read_excel(temp_path, engine='openpyxl')
-            
-            # Cria arquivo XLS temporário
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.xls') as temp_xls:
-                temp_xls_path = temp_xls.name
-            
-            # Salva como XLS
-            df.to_excel(temp_xls_path, engine='xlwt', index=False)
-            
-            # Lê o arquivo XLS gerado
-            with open(temp_xls_path, 'rb') as f:
-                output = BytesIO(f.read())
-            
-            # Remove arquivos temporários
-            os.unlink(temp_path)
-            os.unlink(temp_xls_path)
-            
-            # Gera nome do arquivo
-            nome_original = arquivo.filename.rsplit('.', 1)[0]
-            filename = f"{nome_original}_convertido.xls"
-            
-            return send_file(
-                output,
-                as_attachment=True,
-                download_name=filename,
-                mimetype='application/vnd.ms-excel'
-            )
-            
-        except Exception as e:
-            # Limpa arquivos temporários em caso de erro
-            try:
-                os.unlink(temp_path)
-            except:
-                pass
-            return jsonify({'erro': f'Erro na conversão com pandas: {str(e)}'}), 500
-            
-    except ImportError:
-        return jsonify({'erro': 'Pandas não está instalado. Use a rota principal.'}), 500
-    except Exception as e:
-        return jsonify({'erro': f'Erro inesperado: {str(e)}'}), 500
 
 @app.route("/importar", methods=["POST"])
 def importar():
